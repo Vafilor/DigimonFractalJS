@@ -6,7 +6,7 @@ The intention is that you can view the code in a browser without downloading any
 
 [Check it out](https://vafilor.github.io/DigimonFractalJS/src/index.html)
 
-[Coast](/images/sample.png?raw=true)
+![Sample](/images/sample.png?raw=true "Sample")
 
 There are two files [index.html](https://vafilor.github.io/DigimonFractalJS/src/index.html), which shows the result in an imitation of Izzy's laptop in that episode, 
 and [basic.html](https://vafilor.github.io/DigimonFractalJS/src/basic.html) which is a bare-bones reproduction of the original code with nothing added on except making it
@@ -22,7 +22,7 @@ Major props to them for putting it together.
 The code uses few (if any) new features of javascript. This is intentionally done so it can be easily
 kept and modified in a single file. No build systems are used and it will (hopefully) run well on old browsers.
 
-No `const`, `let` ,[destructuring](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment), classes, or typescript is used. I missed them greatly.
+No `const`, `let` ,[destructuring](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment), `classes``, or `typescript`` is used. I missed them greatly.
 
 ## Mobile
 
