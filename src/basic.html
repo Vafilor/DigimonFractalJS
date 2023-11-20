@@ -1,0 +1,95 @@
+<html>
+    <head>
+        <title>Izzy Coast Creation</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <style>
+            body {
+                margin: 0;
+            }
+        </style>
+        <script>
+            var context = null;
+
+            // utility function to help reproduce original code
+            function line(x0, y0, x1, y1, mystery1, mystery2) {
+                context.lineWidth = 1;
+                context.beginPath();
+                context.moveTo(x0 , y0);
+                context.lineTo(x1, y1);
+                context.stroke();
+            }
+            
+            // utility function to help reproduce original code
+            function sqr(val) {
+                return Math.sqrt(val);
+            }
+
+            // utility function to help reproduce original code
+            function rnd() {
+                return Math.random();
+            }
+
+            // function written on izzy's laptop
+            // slightly modified to work with javascript
+            function izzyFractal() {
+                /* func sample. coast creation */
+                var s = 1.5; // in the original code this gets an input, but we just set it here
+                // while s<1 or s>=2
+                //     input "ratio 1 to 2";s
+                // endwhile
+                s = (s-1)/10+1;
+
+                // Not applicable in this code
+                // screen 1,2,1,1
+                s = sqr(s*s-1);
+                var x0=100, x1=412, y0=0, y1=0
+
+                fractal(x0,x1,y0,y1,1);
+                line(100, 50, 412, 50, 255, 65535);
+                // end
+
+                // Not a fan of moving this below its first use, but javascript does technically allow this
+                // see https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/Functions#function_hoisting
+                // func fractal(x0:float,x1:float,y0:float,y1:float,sp:int)
+                function fractal(x0, x1, y0, y1, sp) {
+                    var l, r, x2, y2;
+                    l = sqr((x1-x0)*(x1-x0)+(y1-y0)*(y1-y0));
+
+                    if (l < 2 || sp >= 9) {
+                        line(x0,y0/3+50,x1,y1/3+50,255,65535) 
+                        // : return()
+                        return;
+                    }
+
+                    r = rnd() + rnd() + rnd() - 2;
+                    x2=(x0+x1)/2+s*(y1-y0)*r;
+                    y2=(y0+y1)/2+s*(x0-x1)*r;
+                    sp = sp + 1;
+                    fractal(x0,x2,y0,y2,sp);
+                    fractal(x2,x1,y2,y1,sp);
+                    // endfunc
+                }
+            }
+
+    
+            function setUpDrawingArea() {
+                var canvas = document.getElementById("canvas");
+
+                canvas.setAttribute("width", document.body.clientWidth);
+                canvas.setAttribute("height", document.body.clientHeight);
+            
+                context = canvas.getContext("2d");
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                setUpDrawingArea();
+                izzyFractal();
+            });
+        </script>
+    </head>
+
+    <body>
+        <canvas id="canvas" width="1200" height="500"></canvas>
+    </body>
+</html>

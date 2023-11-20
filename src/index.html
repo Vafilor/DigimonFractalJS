@@ -1,0 +1,1025 @@
+<html>
+    <head>
+        <title>Izzy Coast Creation</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+        <style>
+            body {
+                margin: 0;
+            }
+
+            #overlay {
+                position: fixed;
+                left: 0;
+                top: 0;
+                border-radius: 10px;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            }
+
+            #menu {
+                width: 100%;
+                height: 30px;
+                background-color: #d1c8be;
+                padding-left: 8px;
+            }
+
+            #content {
+                width: 100%;
+                height: 100%;
+                box-sizing: border-box;
+            }
+
+            #content-options {
+                background-color: #E9F2F7;
+                padding: 10px;
+            }
+
+            #content-code {
+                background-color: #E9F2F7;
+                overflow: auto;
+                padding: 10px 20px 40px 10px;
+                box-sizing: border-box;
+            }
+
+            input[type=radio][name=menu] {
+                display: none;
+            }
+
+            input[type=radio][name=menu] + label {
+                display: inline-block;
+                height: 16px;
+                line-height: 16px;
+                margin-right: 4px;
+                padding: 3px;
+                border: 1px solid gray;
+                margin-top: 3px;
+                margin-bottom: 4px;
+            }
+
+            input[type=radio][name=menu] + label:hover {
+                cursor: pointer;
+                background-color: #ded4c9;
+            }
+
+            input[type=radio][name=menu]:checked + label {
+                background-color: #afa8a0;
+            }
+
+            #redraw {
+                height: 24px;
+                padding: 3px;
+                margin-top: 3px;
+                margin-bottom: 4px;
+            }
+
+            .d-none {
+                display: none;
+            }
+
+            .content-panel {
+                width: 100%;
+                height: 100%;
+            }
+
+            .code-line-number {
+                font-family: monospace;
+            }
+
+            .code-code {
+                font-family: monospace;
+                padding-left: 10px;
+            }
+        </style>
+        <script>
+            var drawingOptions = {
+                context: null,
+                laptop: {
+                    case: {
+                        padding: {
+                            left: 8,
+                            right: 8
+                        }
+                    },
+                    screenCase: {
+                        width: 80,
+                        padding: {
+                            top: 60,
+                            bottom: 20,
+                            left: 40, // left and right should be the same
+                            right: 40 
+                        }
+                    }
+                },
+                // These are values specific to the fractal drawing code
+                // They are based on the laptop values above and calculated 
+                // using the calculateFractalOptions function below
+                fractal: {
+                    animationSpeed: 0,
+                    animationCounter: 0,
+                    ratio: 1.5, // Restriction: ratio >= 1 and ratio < 2,
+                    xMin: 0,
+                    yMin: 0,
+                    width: 0,
+                    height: 0
+                }
+            };
+
+            function calculateFractalOptions() {
+                var laptopScreenCaseWidth = drawingOptions.laptop.screenCase.width;
+                var padding = drawingOptions.laptop.screenCase.padding;
+                
+                var width = document.body.clientWidth;
+                var height = document.body.cientHeight;
+
+                var isSmallScreen = document.body.clientWidth <= 576;
+
+                drawingOptions.fractal.width = width - (padding.left + padding.right + laptopScreenCaseWidth) - 20;
+                drawingOptions.fractal.xMin = (padding.left + laptopScreenCaseWidth + 10) * 1.20;
+                if (!isSmallScreen) {
+                    drawingOptions.fractal.xMin += 75;
+                }
+
+                drawingOptions.fractal.xMax = drawingOptions.fractal.width;
+                if (!isSmallScreen) {
+                    drawingOptions.fractal.xMax *=  0.85;
+                }
+
+                drawingOptions.fractal.yMin = (padding.top + laptopScreenCaseWidth + 10);
+                if (!isSmallScreen) {
+                    drawingOptions.fractal.yMin += 100;
+                } else {
+                    drawingOptions.fractal.yMin += 40;
+                }
+
+                drawingOptions.fractal.height = height - 2 * (padding.top + padding.bottom + laptopScreenCaseWidth) - 20;
+            }
+
+            function adjustDrawingOptionsBasedOnScreenSize(width, height) {
+                var screenCase = drawingOptions.laptop.screenCase;
+
+                if (width >= 992) {
+                    screenCase.width = 80;
+                    screenCase.padding = {
+                        top: 60,
+                        bottom: 20,
+                        left: 40,
+                        right: 40 
+                    };
+                } else if(width >= 768) {
+                    screenCase.width = 60;
+                    screenCase.padding = {
+                        top: 40,
+                        bottom: 20,
+                        left: 40,
+                        right: 40 
+                    };
+                } else if(width >= 576) {
+                    screenCase.width = 40;
+                    screenCase.padding = {
+                        top: 20,
+                        bottom: 30,
+                        left: 20,
+                        right: 20 
+                    };
+                } else {
+                    screenCase.width = 20;
+                    screenCase.padding = {
+                        top: 10,
+                        bottom: 30,
+                        left: 20,
+                        right: 20 
+                    };
+                }
+            }
+
+            var fractal = {
+                // rnd returns a random number.
+                // A separate function was created to encapsulate the logic in case a more "true to the original code" 
+                // random function is found
+                rnd: function() {
+                    return Math.random();
+                },
+                _line: function(x0, y0, x1, y1, mystery1, mystery2) {
+                    var context = drawingOptions.context;
+
+                    context.lineWidth = 1;
+                    context.beginPath();
+                    context.moveTo(x0 , y0 + drawingOptions.fractal.yMin);
+                    context.lineTo(x1, y1 + drawingOptions.fractal.yMin);
+                    context.stroke();
+                },
+                line: function(x0, y0, x1, y1, mystery1, mystery2) {
+                    if (drawingOptions.animationSpeed <= 0) {
+                        fractal._line(x0, y0, x1, y1, mystery1, mystery2);
+                    } else {
+                        // Note: if you redraw while the previous drawing is animating,
+                        // you will have two (or more) drawings going at the same time.
+                        // It's not too hard to restrict this, but it looks cool, so I'm leaving it.
+                        setTimeout(() => {
+                            fractal._line(x0, y0, x1, y1, mystery1, mystery2);
+                        }, drawingOptions.animationSpeed * drawingOptions.animationCounter);
+
+                        drawingOptions.animationCounter++;
+                    }
+                },
+                _fractal: function (x0, x1, y0, y1, depth, ratio) {
+                    var length = Math.sqrt( (x1 - x0) * (x1 - x0) + (y1 - y0) * (y1 - y0) );
+                    if (length < 2 || depth >= 9) {
+                        fractal.line(x0 , y0 / 3, x1, y1 / 3, 255, 65535);
+                        return;
+                    }
+
+                    var r = fractal.rnd() + fractal.rnd() + fractal.rnd() - 2;
+                    var x2 = (x0 + x1) / 2 + ratio * (y1 - y0) * r;
+                    var y2 = (y0 + y1) / 2 + ratio * (x0 - x1) * r;
+
+                    fractal._fractal(x0, x2, y0, y2, depth + 1, ratio);
+                    fractal._fractal(x2, x1, y2, y1, depth + 1, ratio);
+                },
+                fractal: function(x0, x1, y0, y1, ratio) {
+                    fractal._fractal(x0, x1, y0, y1, 1, ratio);
+                },
+                draw: function (ratio) {
+                    drawingOptions.animationCounter = 0;
+
+                    ratio = (ratio-1) / 10 + 1;
+                    ratio = Math.sqrt(ratio*ratio - 1);
+
+                    var xMin = drawingOptions.fractal.xMin;
+                    var xMax = drawingOptions.fractal.xMax;
+
+                    fractal.line(xMin, 0, xMax, 0, 255, 65535);
+                    fractal.fractal(xMin, xMax, 0, 0, ratio);
+                }
+            };
+
+            /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } args
+             * @param { number } args.x coordinate of the top left corner
+             * @param { number } args.y coordinate of the top left corner
+             * @param { number } args.width
+             * @param { number } args.height
+             * @param { number } args.overTop
+             * @param { number } args.indent
+             */
+            function drawTopTrapezoid(context, args) {
+                var x = args.x;
+                var y = args.y;
+                var width = args.width;
+                var height = args.height;
+                var overTop = args.overTop;
+                var indent = args.indent;
+
+                var sideLength = width * 2 / 17;
+
+                context.beginPath();
+                context.lineWidth = 2;
+                context.strokeStyle = "#798807";
+                context.fillStyle = "#E7CC5A";
+
+                var mainHeight = height - overTop;
+
+                // Trapezoid
+                context.moveTo(x, y);
+                context.lineTo(x + indent, y - overTop);
+                context.lineTo(x + width - indent, y - overTop);
+                context.lineTo(x + width, y);
+                context.lineTo(x + width - indent, y);
+
+                var curveValue = 15;
+                context.bezierCurveTo(
+                    x + width - sideLength, y + mainHeight, 
+                    x + width - sideLength, y + mainHeight, 
+                    x + width - sideLength - curveValue, y + mainHeight
+                );
+
+                context.lineTo(x + sideLength + curveValue, y + mainHeight);
+                context.bezierCurveTo(
+                    x + sideLength, y + mainHeight,
+                    x + sideLength, y + mainHeight,
+                    x + indent, y
+                );
+
+                context.lineTo(x, y);
+                context.fill();
+                context.stroke();
+                
+                // Inner ellipse
+                context.beginPath();
+                context.fillStyle = "#A18831";
+                var rectX = x + width / 3;
+                var rectY = y - overTop + height / 2.4;
+                var rectWidth = width / 3;
+                var rectHeight = height / 3;
+                context.roundRect(rectX, rectY, rectWidth, rectHeight, [20]);
+                context.fill();
+                context.stroke();
+
+                // Ellipse inner circles
+                var innerCircleFill = "#BDA74A";
+                var innerCircleWidth = rectWidth / 5.5;
+                var innerCirclePaddingX = 2;
+                var innerCirclePaddingY = 1;
+
+                context.strokeStyle = "#798807";
+                context.beginPath();
+                context.fillStyle = innerCircleFill;
+                context.roundRect(rectX + innerCirclePaddingX, rectY + innerCirclePaddingY, innerCircleWidth, rectHeight - 2 * innerCirclePaddingY, [20]);
+                context.fill();
+                context.stroke();
+
+                context.beginPath();
+                context.fillStyle = innerCircleFill;
+                context.roundRect(rectX + rectWidth - innerCircleWidth - innerCirclePaddingX, rectY + innerCirclePaddingY, innerCircleWidth, rectHeight - 2 * innerCirclePaddingY, [20]);
+                context.fill();
+                context.stroke();
+            }
+
+             /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { number } x coordinate of the top-left of the circle
+             * @param { number } y coordinate of the top-left of the circle
+             * @param { number } radius of the circle
+             */
+            function drawLaptopCircle(context, x, y, radius) {
+                var xCenter = x + radius;
+                var yCenter = y + radius;
+
+                context.beginPath();
+                context.lineWidth = 2;
+                context.strokeStyle = "#8BA588";
+                context.fillStyle = "#D4E5D5";
+                context.ellipse(xCenter, yCenter, radius, radius, 0, 0, 2 * Math.PI);
+                context.fill();
+                context.stroke();
+
+                context.beginPath();
+                context.fillStyle = "#A8C8A7AA";
+                context.ellipse(xCenter, yCenter + radius / 2, radius * 0.7, radius * 0.7, 0, 0, 2 * Math.PI);
+                context.fill();
+            }
+
+            /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } args
+             * @param { number } args.x the top-left x coordinate of the fin
+             * @param { number } args.y the top-left y coordinate of the fin
+             * @param { number } args.width the width of the fin
+             * @param { number } args.height the height of the fin
+             * @param { number } args.triangleHeight 
+             * @param { number } args.triangleWidth
+             * @param { number } args.outlineWidth
+             * @param { number } args.strokeWidth
+             * @param { string } args.direction the direction the fin faces, left or right
+             */
+            function drawFin(context, args) {
+                var op;
+                if (args.direction === "right") {
+                    op = function(lhs, rhs) {
+                        return lhs - rhs;
+                    }
+                } else {
+                    op = function(lhs, rhs) {
+                        return lhs + rhs;
+                    }
+                }
+
+                var x = args.x;
+                var y = args.y;
+                var yBottom = y + args.height;
+                var height = args.height;
+                var triangleHeight = args.triangleHeight;
+                var triangleWidth = args.triangleWidth;
+                var outlineWidth = args.outlineWidth;
+                var z = triangleHeight - (outlineWidth * triangleHeight) / triangleWidth;
+
+                // top shines
+                context.fillStyle = "#C4BA74";
+                context.beginPath();
+                context.moveTo(x, y + triangleHeight);
+                context.lineTo(op(x, triangleWidth), y);
+                context.lineTo(op(x, triangleWidth), y + triangleHeight - z);
+                context.lineTo(op(x, outlineWidth), y + triangleHeight);
+                context.fill();
+
+                var middleShineLength = 60 / 745 * height;
+
+                // middle shines
+                context.fillStyle = "#E7DEB8";
+                context.lineWidth = 0;
+                context.beginPath();
+                context.moveTo(x, y + triangleHeight + middleShineLength);
+                context.lineTo(x, y + triangleHeight);
+                context.lineTo( op(x, outlineWidth), y + triangleHeight);
+                context.lineTo( op(x, outlineWidth), y + triangleHeight + middleShineLength);
+                context.fill();
+
+                // bottom color
+                context.fillStyle = "#D4C675";
+                context.lineWidth = 0;
+                context.beginPath();
+                context.moveTo(x, yBottom);
+                context.lineTo(x, y + triangleHeight + middleShineLength);
+                context.lineTo( op(x, outlineWidth),  y + triangleHeight + middleShineLength);
+                context.lineTo( op(x, outlineWidth), yBottom);
+                context.fill();
+
+                // outlines
+                context.lineWidth = args.strokeWidth;
+                context.strokeStyle = "#000";
+                context.beginPath();
+                context.moveTo(x, yBottom);
+                context.lineTo(x, y + triangleHeight);
+                context.lineTo( op(x, triangleWidth), y);
+
+                context.lineTo( op(x, triangleWidth), y + triangleHeight - z);
+                context.lineTo( op(x, outlineWidth), y + triangleHeight);
+                context.lineTo( op(x, outlineWidth), yBottom);
+                context.stroke();
+            }
+
+            /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } args
+             * @param { number } args.x the top-left x coordinate of the arc
+             * @param { number } args.y the top-left y coordinate of the arc
+             * @param { number } args.width the width of the arc
+             * @param { number } args.height the height of the arc
+             */
+            function drawBottomArc(context, args) {
+                var x = args.x;
+                var y = args.y;
+                var width = args.width;
+                var height = args.height;
+
+                context.beginPath();
+                context.strokeWidth = 2;
+                context.strokeColor = "#000000";
+                context.fillStyle = "#e6cd65";
+                context.moveTo(x, y + height);
+                context.quadraticCurveTo(x + width / 2, y, x + width, y + height);
+                context.stroke();
+                context.fill();
+            }
+
+            /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } args
+             * @param { number } args.x the top-left x coordinate of the pineapple
+             * @param { number } args.y the top-left y coordinate of the pineapple
+             * @param { number } args.width - width of the pineapple
+             * @param { number } args.height - height of the pineapple
+             */
+            function drawPineapple(context, args) {
+                var x = args.x;
+                var y = args.y;
+                var width = args.width;
+                var height = args.height;
+                var bottom = args.y + height;
+                var heightUnit = height / 48;
+                var widthUnit = width / 48;
+                
+                context.strokeStyle = "#000000";
+                context.fillStyle = "#ffffff";
+
+                context.beginPath();
+                context.moveTo(x + width / 2, bottom);
+                context.bezierCurveTo(
+                    x + width, bottom,
+                    x + width - 4 * widthUnit, y + 2 / 3 * height,
+                    x + width - 4 * widthUnit, y + 2 / 3 * height
+                );
+
+                context.bezierCurveTo(
+                    x + width - 4 * widthUnit, y + height * 3 / 5,
+                    x + width - 4 * widthUnit, y + height * 3 / 6,
+                    x + width - 8 * widthUnit, y + height / 3,
+                );
+
+                // Spikes
+                context.lineTo(x + width                 , y + 14 * heightUnit)
+                context.lineTo(x + width - 12 * widthUnit, y + 12 * heightUnit);
+                context.lineTo(x + width -  4 * widthUnit, y +  7 * heightUnit);
+                context.lineTo(x + width - 14 * widthUnit, y +  7 * heightUnit);
+                context.lineTo(x + width - 10 * widthUnit, y);
+
+                // Center
+                context.lineTo(x + width / 2             , y + 4 * heightUnit);
+
+                // Reflection - spikes
+                context.lineTo(x + 10 * widthUnit, y);
+                context.lineTo(x + 14 * widthUnit, y +  7 * heightUnit);
+                context.lineTo(x +  4 * widthUnit, y +  7 * heightUnit);
+                context.lineTo(x + 12 * widthUnit, y + 12 * heightUnit);
+                context.lineTo(x                 , y + 14 * heightUnit)
+
+                context.lineTo(x + 8 * widthUnit,  y + height / 3)
+
+                context.bezierCurveTo(
+                    x + 4 * widthUnit, y + height * 3 / 6,
+                    x + 4 * widthUnit, y + height * 3 / 5,
+                    x + 4 * widthUnit, y + 2 / 3 * height
+                );
+
+                context.bezierCurveTo(
+                    x + 4 * widthUnit, y + 2 / 3 * height,
+                    x, bottom,
+                    x + width / 2, bottom
+                );
+
+                context.stroke();
+                context.fill();
+            }
+
+            /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } args
+             * @param { number } args.x the top-left x coordinate
+             * @param { number } args.y the top-left y coordinate
+             * @param { number } args.width - width
+             * @param { number } args.height - height
+             * @param { "left"|"right" } args.direction of the hinges
+             */
+            function drawHinges(context, args) {
+                var x = args.x;
+                var y = args.y;
+                var width = args.width;
+                var height = args.height;
+                var bottom = y + height;
+                var curveValue = width / 40;
+
+                var op = null;
+                if (args.direction && args.direction === "right") {
+                    op = function(lhs, rhs) {
+                        return lhs + rhs;
+                    }
+                } else {
+                    op = function(lhs, rhs) {
+                        return lhs - rhs;
+                    }
+                }
+
+                context.lineWidth = 3;
+                context.strokeStyle = "#000000";
+                context.fillStyle = "#b0983b";
+            
+                context.beginPath();
+                context.moveTo( op(x, curveValue), bottom);
+                context.quadraticCurveTo(
+                    op(x, curveValue), y + height / 2, 
+                    x, y  
+                );
+
+                context.lineTo( op(x, 0.6 * width - curveValue), y );
+                context.quadraticCurveTo(
+                    op(x, 0.6 * width), y + height / 2,
+                    op(x, 0.6 * width), bottom
+                );
+                context.stroke();
+                context.fill();
+
+                context.beginPath();
+                context.moveTo( op(x, 0.6 * width - curveValue), y );
+                context.lineTo( op(x, 0.8 * width), y );
+                context.stroke();
+
+                // Second hinge
+                context.fillStyle = "#e8cd63";
+
+                context.beginPath();
+                context.moveTo(op(x, 0.6 * width - curveValue), y);
+                context.quadraticCurveTo(
+                    op(x, 0.6 * width), y + height / 2,
+                    op(x, 0.6 * width), bottom
+                );
+
+                context.lineTo( op(x, 0.9 * width + curveValue), y + height);
+                context.quadraticCurveTo(
+                    op(x, 0.9 * width + curveValue), y + height / 2, 
+                    op(x, 0.9 * width), y
+                );
+                context.lineTo(op(x, 0.6 * width - curveValue), y);
+                context.fill();
+
+                // Curve at the end
+                context.lineWidth = 1;
+                context.beginPath();
+                context.moveTo( op(x, width), y + height);
+                context.quadraticCurveTo(
+                    op(x, width), y + height / 2, 
+                    op(x, width - curveValue), y + 0.1 * height
+                );
+
+                context.stroke();
+            }
+
+            /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } properties
+             * @param { number } properties.x the top left of the laptop screen
+             * @param { number } properties.y the top left of the laptop screen
+             * @param { number } properties.screenWidth the width of the drawing area
+             * @param { number } properties.screenHeight the height of the drawing area
+             * @param { number } properties.triangleWidth of the fins
+             * @param { number } properties.triangleHeight of the fins
+             */
+            function drawLaptopBack(context, properties) {
+                var x = properties.x;
+                var y = properties.y;
+                var width = properties.width;
+                var height = properties.height;
+                var triangleWidth = properties.triangleWidth;
+                var triangleHeight = properties.triangleHeight;
+
+                // Back background
+                context.lineWidth = 0; 
+                context.strokeStyle = "#B69526";
+                context.fillStyle = "#B69526";
+                context.beginPath();
+                context.moveTo(x, y + height);
+
+                context.lineTo(x, y + triangleHeight);
+                context.lineTo(x + triangleWidth, y);
+                context.lineTo(x + width - triangleWidth, y);
+                context.lineTo(x + width, y + triangleHeight);
+                context.lineTo(x + width, y + height);
+                context.fill();
+                context.stroke();
+
+                drawFin(context, {
+                    outlineWidth: 6,
+                    strokeWidth: 2,
+                    x: x,
+                    y: y,
+                    height: height,
+                    triangleHeight: triangleHeight,
+                    triangleWidth: triangleWidth,
+                    direction: "left"
+                });
+
+                drawFin(context, {
+                    outlineWidth: 6,
+                    strokeWidth: 2,
+                    x: x + width,
+                    y: y,
+                    height: height,
+                    triangleHeight: triangleHeight,
+                    triangleWidth: triangleWidth,
+                    direction: "right"
+                });
+            }
+
+             /**
+             * @param { CanvasRenderingContext2D } context
+             * @param { Object } dimensions
+             * @param { number } dimensions.width
+             * @param { number } dimensions.height
+             * @param { Object } config
+             */
+            function drawLaptop(context, dimensions, config) {
+                // Page Background
+                context.fillStyle = "#52604E"; // Rough background color during the code scene
+                context.fillRect(0, 0, dimensions.width, dimensions.height);
+
+                var casePadding = config.laptop.case.padding;
+                var screenCasePadding = config.laptop.screenCase.padding;
+                var screenCaseWidth = config.laptop.screenCase.width;
+                var screenWidth =  dimensions.width - screenCasePadding.left - screenCasePadding.right;
+                var screenHeight = dimensions.height - screenCasePadding.top - screenCasePadding.bottom;
+                
+                var laptopBackY = screenCasePadding.top + dimensions.height * 0.300;
+                drawLaptopBack(context, {
+                    x: casePadding.left,
+                    y: laptopBackY,
+                    width: dimensions.width - casePadding.left - casePadding.right, 
+                    height: dimensions.height - laptopBackY,
+                    triangleWidth: screenCasePadding.left - casePadding.left,
+                    triangleHeight: 80 / 1080 * dimensions.height
+                });
+
+                // Outer laptop screen case
+                context.beginPath();
+                context.lineWidth = 4;
+                context.strokeStyle = "#000";
+                context.fillStyle = "#D4E5D5";
+                context.roundRect(
+                    screenCasePadding.left, 
+                    screenCasePadding.top, 
+                    screenWidth, 
+                    screenHeight, 
+                    [40]
+                );
+                context.stroke();
+                context.fill();
+
+                var radius = screenCaseWidth * 0.15;
+                drawLaptopCircle(context, screenCasePadding.left - radius + screenWidth * 0.20, screenCasePadding.top + screenCaseWidth / 2 - radius, radius);
+                drawLaptopCircle(context, screenCasePadding.left - radius + screenWidth * 0.80, screenCasePadding.top + screenCaseWidth / 2 - radius, radius);
+
+                var trapezoidWidth = 20 / 134 * screenWidth;
+                var trapezoidHeight = 1 / 3 * screenCaseWidth;
+                drawTopTrapezoid(context, {
+                    x: screenCasePadding.left + screenWidth / 2 - trapezoidWidth / 2,
+                    y: screenCasePadding.top - 1,
+                    width: trapezoidWidth,
+                    height: trapezoidHeight,
+                    overTop: trapezoidHeight / 6,
+                    indent: trapezoidWidth / 40
+                });
+
+                // Laptop screen
+                context.beginPath();
+                context.lineWidth = 2;
+                context.strokeStyle = "#000";
+                context.fillStyle = "#E9F2F7";
+                context.roundRect(
+                    screenCasePadding.left + screenCaseWidth,
+                    screenCasePadding.top + screenCaseWidth,
+                    screenWidth - screenCaseWidth * 2, 
+                    screenHeight - screenCaseWidth * 2, 
+                    [10]
+                );
+                context.stroke();
+                context.fill();
+
+                var arcWidth = 750 / 1440 * dimensions.width;
+                var arcHeight = 200 / 1080 * dimensions.height;
+                var widthToHeightRatio = dimensions.width / dimensions.height;
+                if (widthToHeightRatio < 0.60) {
+                    arcHeight = dimensions.width * 0.25;
+                }
+
+                drawBottomArc(context, {
+                    x: (dimensions.width - arcWidth) / 2.0,
+                    y: dimensions.height - arcHeight,
+                    width: arcWidth,
+                    height: arcHeight
+                });
+
+                var pineappleWidth = arcWidth / 24;
+                if (dimensions.width <= 576) {
+                    pineappleWidth = arcWidth / 14;
+                }
+
+                var pineappleHeight = arcHeight / 4;
+                var pineappleBottomMargin = Math.max(dimensions.height * 0.01, 5)
+                drawPineapple(context, {
+                   x: (dimensions.width - pineappleWidth) / 2.0,
+                   y: dimensions.height - pineappleHeight - pineappleBottomMargin,
+                   width: pineappleWidth,
+                   height: pineappleHeight
+                });
+
+                var rightHingeX = dimensions.width / 2 + 0.43 * arcWidth;
+                var hingeHeight = screenCasePadding.bottom;
+                drawHinges(context, {
+                    x: rightHingeX,
+                    y: dimensions.height - hingeHeight,
+                    width: dimensions.width / 2 - arcWidth * 0.43 - screenCasePadding.right,
+                    height: hingeHeight,
+                    direction: "right"
+                });
+
+                var leftHingeX = dimensions.width / 2 - 0.43 * arcWidth;
+                drawHinges(context, {
+                    x: leftHingeX,
+                    y: dimensions.height - hingeHeight,
+                    width: dimensions.width / 2 - arcWidth * 0.43 - screenCasePadding.left,
+                    height: hingeHeight,
+                    direction: "left"
+                });
+            }
+
+            function setUpDrawingArea() {
+                calculateFractalOptions();
+
+                var canvas = document.getElementById("canvas");
+
+                canvas.setAttribute("width", document.body.clientWidth);
+                canvas.setAttribute("height", document.body.clientHeight);
+            
+                var screenCase = drawingOptions.laptop.screenCase;
+                var overlay = document.getElementById("overlay");
+                overlay.style.left = screenCase.padding.left + screenCase.width + 0.5;
+                overlay.style.top = screenCase.padding.top + screenCase.width + 0.5;
+                overlay.style.width = document.body.clientWidth - screenCase.padding.left - screenCase.padding.right - 2 * screenCase.width - 1;
+                overlay.style.height = document.body.clientHeight - screenCase.padding.bottom - screenCase.padding.top - 2 * screenCase.width - 1;
+
+                drawingOptions.context = canvas.getContext("2d");
+            }
+
+            function drawScene(options) {
+                drawLaptop(options.context, {
+                    width: document.body.clientWidth,
+                    height: document.body.clientHeight
+                }, drawingOptions);
+
+                fractal.draw(options.fractal.ratio);
+            }
+
+            function setUpMenu() {
+                var contentElement = document.getElementById("content");
+                var contentOptionsElement = document.getElementById("content-options");
+                var contentCodeElement = document.getElementById("content-code");
+
+                var menuOptions = document.getElementsByName("menu");
+                for(var i = 0; i < menuOptions.length; i++) {
+                    menuOptions[i].addEventListener("change", function(event) {
+                        switch(event.target.value) {
+                            case "draw":
+                                contentElement.classList.add("d-none");
+                                contentCodeElement.classList.add("d-none");
+                                contentOptionsElement.classList.add("d-none");
+                                break;
+                            case "options":
+                                contentElement.classList.remove("d-none");
+                                contentCodeElement.classList.add("d-none");
+                                contentOptionsElement.classList.remove("d-none");
+                                break;
+                            case "code":
+                                contentElement.classList.remove("d-none");
+                                contentCodeElement.classList.remove("d-none");
+                                contentOptionsElement.classList.add("d-none");
+                                break;
+                        }
+                    });
+                }
+
+                document.getElementById("redraw").addEventListener("click", function() {
+                    drawScene(drawingOptions);
+                });
+
+                document.getElementById("ratio-input").addEventListener("input", function(event) {
+                    drawingOptions.fractal.ratio = parseFloat(event.currentTarget.value);
+                });
+
+                document.getElementById("animation-speed-input").addEventListener("input", function() {
+                    drawingOptions.animationSpeed = Math.max(parseFloat(event.currentTarget.value), 0);
+                });
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                document.getElementById("radio-draw").checked = true;
+
+                adjustDrawingOptionsBasedOnScreenSize(document.body.clientWidth, document.body.clientHeight);
+                setUpMenu();
+                setUpDrawingArea();
+                drawScene(drawingOptions);
+            });
+
+            // Debounce resize
+            var resizeTimeoutId = undefined;
+            window.addEventListener("resize", function() {
+                clearTimeout(resizeTimeoutId);
+                resizeTimeoutId = setTimeout(function() {
+                    adjustDrawingOptionsBasedOnScreenSize(document.body.clientWidth, document.body.clientHeight);
+                    setUpDrawingArea();
+                    drawScene(drawingOptions);
+                }, 300);
+            })
+        </script>
+    </head>
+
+    <body>
+        <canvas id="canvas" width="1200" height="500"></canvas>
+        <div id="overlay">
+            <div id="menu">
+                <input id="radio-draw" type="radio" name="menu" value="draw" />
+                <label for="radio-draw">Draw</label>
+                <input id="radio-options" type="radio" name="menu" value="options" />
+                <label for="radio-options">Options</label>
+                <input id="radio-code" type="radio" name="menu" value="code" />
+                <label for="radio-code">Code</label>
+                <button type="button" id="redraw">Redraw</button>
+            </div>
+            <div id="content" class="d-none">
+                <div id="content-options" class="content-panel">
+                    <label for="ratio-input">Ratio (between 1.0 to 2.0)</label>
+                    <br/>
+                    <input id="ratio-input" type="number" value="1.5" min="1" max="2" step="0.1" />
+                    <br/>
+                    <br/>
+                    <label for="animation-speed-input">
+                        Animation Speed in milliseconds
+                        <br/>
+                        (0 means no animation)
+                        <br/>
+                        (10 is an okay default)
+                    </label>
+                    <br/>
+                    <input id="animation-speed-input" type="number" value="0" min="0" step="2" />
+                    <br/>
+                </div>
+                <div id="content-code" class="content-panel">
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td class="code-line-number">100</td>
+                                <td class="code-code">/* func sample. coast creation */</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">110</td>
+                                <td class="code-code">float s</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">120</td>
+                                <td class="code-code">while s<1 or s>=2</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">130</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;input "ratio 1 to 2";s</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">140</td>
+                                <td class="code-code">endwhile</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">150</td>
+                                <td class="code-code">s = (s-1)/10+1</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">160</td>
+                                <td class="code-code">screen 1,2,1,1</td>
+                            </tr>                 
+                            <tr>
+                                <td class="code-line-number">170</td>
+                                <td class="code-code">s=sqr(s*s-1)</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">180</td>
+                                <td class="code-code">float x0=100, x1=412, y0=0, y1=0</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">190</td>
+                                <td class="code-code">fractal(x0,x1,y0,y1,1)</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">200</td>
+                                <td class="code-code">line(100, 50, 412, 50, 255, 65535)</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">210</td>
+                                <td class="code-code">end</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">220</td>
+                                <td class="code-code">func fractal(x0:float,x1:float,y0:float,y1:float,sp:int)</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">230</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;float l, r, x2, y2</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">240</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;l=sqr((x1-x0)*(x1-x0)+(y1-y0)*(y1-y0))</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">250</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;if l<2 or sp>=9 then {</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">260</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;line(x0,y0/3+50,x1,y1/3+50,255,65535) : return()</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">270</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;}</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">280</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;r=rnd()+rnd()+rnd()-2</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">290</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;x2=(x0+x1)/2+s*(y1-y0)*r</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">300</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;y2=(y0+y1)/2+s*(x0-x1)*r</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">310</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;sp = sp + 1</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">320</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;fractal(x0,x2,y0,y2,sp)</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">330</td>
+                                <td class="code-code">&nbsp;&nbsp;&nbsp;&nbsp;fractal(x2,x1,y2,y1,sp)</td>
+                            </tr>
+                            <tr>
+                                <td class="code-line-number">340</td>
+                                <td class="code-code">endfunc</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </body>
+</html>

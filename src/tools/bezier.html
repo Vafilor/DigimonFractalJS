@@ -1,0 +1,253 @@
+<html>
+    <head>
+        <style>
+            body {
+                margin: 0;
+            }
+
+            #overlay {
+                position: fixed;
+                z-index: 1;
+                background: transparent;
+                width: calc(100vw - 200px);
+                height: 100vh;
+                top: 0;
+                left: 0;
+            }
+
+            #menu {
+                position: fixed;
+                z-index: 1;
+                right: 0;
+                top: 0;
+                width: 200px;
+                table-layout: fixed;
+            }
+
+            #menu td input {
+                width: 60px;
+            }
+
+            .point {
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                background-color: black;
+                border-radius: 10px;
+            }
+
+            .draggable:hover {
+                cursor: pointer;
+            }
+
+            .control-point {
+                position: absolute;
+                width: 20px;
+                height: 20px;
+                background-color: red;
+                border-radius: 10px;
+            }
+        </style>
+
+        <script>
+            var context = null;
+            var width = 0;
+            var height = 0;
+            var menuWidth = 200;
+
+            var movingObject = null;
+
+            var p1 =  {element: null, x: 0, y: 0, length: 20, xInput: null, yInput: null};
+            var p2 =  {element: null, x: 0, y: 0, length: 20, xInput: null, yInput: null};
+            var cp1 = {element: null, x: 0, y: 0, length: 20, xInput: null, yInput: null};
+            var cp2 = {element: null, x: 0, y: 0, length: 20, xInput: null, yInput: null};
+
+            function updateElementPositionStyle(obj) {
+                obj.element.style.left = obj.x - obj.length / 2;
+                obj.element.style.top = obj.y - obj.length / 2;
+                obj.xInput.value = obj.x;
+                obj.yInput.value = obj.y;
+            }
+
+            function clearCanvas() {
+                context.fillStyle = "#ffffff";
+                context.fillRect(0, 0, width, height);
+            }
+
+            function drawBezierCurve() {
+                context.beginPath();
+                context.strokeStyle = "#000000";
+                context.strokeWidth = 2;
+                context.moveTo(p1.x, p1.y);
+                context.bezierCurveTo(cp1.x, cp1.y, cp2.x, cp2.y, p2.x, p2.y);
+                context.stroke();
+            }
+
+            function render() {
+                 clearCanvas();
+                 drawBezierCurve();
+            }
+
+            function addMoveEventHandler(obj) {
+                obj.element.addEventListener("mousedown", function(){
+                    movingObject = obj;
+                });
+
+                obj.element.addEventListener("mouseup", function() {
+                    movingObject = null;
+                })
+            }
+
+            document.addEventListener("DOMContentLoaded", function() {
+                var canvas = document.getElementById("canvas");
+                context = canvas.getContext("2d");
+
+                width = window.innerWidth - menuWidth;
+                height = window.innerHeight;
+                canvas.setAttribute("width", width);
+                canvas.setAttribute("height", height);
+
+                p1.element = document.getElementById("point-1");
+                p1.xInput = document.getElementById("p1-x-input");
+                p1.yInput = document.getElementById("p1-y-input");
+
+                p2.element = document.getElementById("point-2");
+                p2.xInput = document.getElementById("p2-x-input");
+                p2.yInput = document.getElementById("p2-y-input");
+
+                cp1.element = document.getElementById("control-point-1");
+                cp1.xInput = document.getElementById("cp1-x-input");
+                cp1.yInput = document.getElementById("cp1-y-input");
+
+                cp2.element = document.getElementById("control-point-2");
+                cp2.xInput = document.getElementById("cp2-x-input");
+                cp2.yInput = document.getElementById("cp2-y-input");
+
+                // Set up initial positions
+                p1.x = width * 1 / 5;
+                p1.y = height * 3 / 5;
+
+                cp1.x = width * 2 / 5;
+                cp1.y = height * 1 / 5;
+
+                cp2.x = width * 3 / 5;
+                cp2.y = height * 4 / 5;
+
+                p2.x = width * 4 / 5;
+                p2.y = height * 2 / 5;
+
+                updateElementPositionStyle(p1);
+                updateElementPositionStyle(cp1);
+                updateElementPositionStyle(cp2);
+                updateElementPositionStyle(p2);
+
+                drawBezierCurve();
+
+                // Set up event handlers
+                addMoveEventHandler(p1);
+                p1.xInput.addEventListener("input", function(event) {
+                    p1.x = event.currentTarget.value;
+                    updateElementPositionStyle(p1);
+                    render();
+                });
+
+                p1.yInput.addEventListener("input", function(event) {
+                    p1.y = event.currentTarget.value;
+                    updateElementPositionStyle(p1);
+                    render();
+                });
+
+
+                addMoveEventHandler(cp1);
+                cp1.xInput.addEventListener("input", function(event) {
+                    cp1.x = event.currentTarget.value;
+                    updateElementPositionStyle(cp1);
+                    render();
+                });
+
+                cp1.yInput.addEventListener("input", function(event) {
+                    cp1.y = event.currentTarget.value;
+                    updateElementPositionStyle(cp1);
+                    render();
+                });
+
+                addMoveEventHandler(cp2);
+                cp2.xInput.addEventListener("input", function(event) {
+                    cp2.x = event.currentTarget.value;
+                    updateElementPositionStyle(cp2);
+                    render();
+                });
+
+                cp2.yInput.addEventListener("input", function(event) {
+                    cp2.y = event.currentTarget.value;
+                    updateElementPositionStyle(cp2);
+                    render();
+                });
+
+                addMoveEventHandler(p2);
+                p2.xInput.addEventListener("input", function(event) {
+                    p2.x = event.currentTarget.value;
+                    updateElementPositionStyle(p2);
+                    render();
+                });
+
+                p2.yInput.addEventListener("input", function(event) {
+                    p2.y = event.currentTarget.value;
+                    updateElementPositionStyle(p2);
+                    render();
+                });
+
+                document.addEventListener("mousemove", function(event) {
+                    if (movingObject === null) {
+                        return;
+                    }
+
+                    movingObject.x = event.clientX;
+                    movingObject.y = event.clientY;
+
+                    updateElementPositionStyle(movingObject);
+                    clearCanvas();
+                    drawBezierCurve();
+                });
+            });
+        </script>
+    </head>
+    <body>
+        <body>
+            <canvas id="canvas" width="1200" height="500"></canvas>
+            <div id="overlay">
+                <div id="point-1" class="point draggable"></div>
+                <div id="control-point-1" class="control-point draggable"></div>
+                <div id="control-point-2" class="control-point draggable"></div>
+                <div id="point-2" class="point draggable"></div>
+            </div>
+            <table id="menu">
+                <tr>
+                    <th></th>
+                    <th>x</th>
+                    <th>y</th>
+                </tr>
+                <tr>
+                    <td>p1</td>
+                    <td><input id="p1-x-input" type="number"  /></td>
+                    <td><input id="p1-y-input" type="number" /></td>
+                </tr>
+                <tr>
+                    <td>cp1</td>
+                    <td><input id="cp1-x-input" type="number" /></td>
+                    <td><input id="cp1-y-input" type="number" /></td>
+                </tr>
+                <tr>
+                    <td>cp2</td>
+                    <td><input id="cp2-x-input" type="number" /></td>
+                    <td><input id="cp2-y-input" type="number" /></td>
+                </tr>
+                <tr>
+                    <td>p2</td>
+                    <td><input id="p2-x-input" type="number" /></td>
+                    <td><input id="p2-y-input" type="number" /></td>
+                </tr>
+            </table>
+        </body>
+    </body>
+</html>
