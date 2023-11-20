@@ -4,12 +4,12 @@ In Digimon some code briefly appeared on screen on Izzy's laptop in episode 5, "
 This is a reproduction of that code, modified to work with the web.
 The intention is that you can view the code in a browser without downloading anything extra.
 
-[Check it out](http://vafilor.github.io/DigimonFractalJS)
+[Check it out](https://vafilor.github.io/DigimonFractalJS/src/index.html)
 
-[Coast](/images/sample.png)
+[Coast](/images/sample.png?raw=true)
 
-There are two files `index.html`, which shows the result in an imitation of Izzy's laptop in that episode, 
-and `basic.html` which is a bare-bones reproduction of the original code with nothing added on except making it
+There are two files [index.html](https://vafilor.github.io/DigimonFractalJS/src/index.html), which shows the result in an imitation of Izzy's laptop in that episode, 
+and [basic.html](https://vafilor.github.io/DigimonFractalJS/src/basic.html) which is a bare-bones reproduction of the original code with nothing added on except making it
 work on the web.
 
 I did not come up with this idea myself, nor did I convert the original image to code.
@@ -73,7 +73,7 @@ Including their original sources here too
 
 ## Extra
 
-`src/tools/bezier.html` contains a draggable bezier curve to play around with.
+[tools/bezier.html](https://vafilor.github.io/DigimonFractalJS/src/index.html) contains a draggable bezier curve to play around with.
 The red circles are the control points.
 
 ## License 
