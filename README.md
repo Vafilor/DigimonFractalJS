@@ -22,7 +22,7 @@ Major props to them for putting it together.
 The code uses few (if any) new features of javascript. This is intentionally done so it can be easily
 kept and modified in a single file. No build systems are used and it will (hopefully) run well on old browsers.
 
-No `const`, `let` ,[destructuring](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment), `classes``, or `typescript`` is used. I missed them greatly.
+No `const`, `let` ,[destructuring](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Destructuring_assignment), `classes`, or `typescript` is used. I missed them greatly.
 
 ## Mobile
 
@@ -73,7 +73,7 @@ Including their original sources here too
 
 ## Extra
 
-[tools/bezier.html](https://vafilor.github.io/DigimonFractalJS/src/index.html) contains a draggable bezier curve to play around with.
+[tools/bezier.html](https://vafilor.github.io/DigimonFractalJS/src/tools/bezier.html) contains a draggable bezier curve to play around with.
 The red circles are the control points.
 
 ## License 
